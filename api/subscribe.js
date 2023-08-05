@@ -1,31 +1,47 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
-  const { email, name } = req.body;
+  let body = '';
 
-  if (!email || !name) {
-    return res.status(400).json({ message: 'Name and email are required' });
-  }
+  // Middleware to parse JSON
+  req.on('data', chunk => {
+    body += chunk.toString(); // convert Buffer to string
+  });
 
-  try {
-    const response = await axios.post(
-      `https://api.mailerlite.com/api/v2/groups/${process.env.MAILERLITE_GROUP_ID}/subscribers`,
-      {
-        email: email,
-        name: name
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-MailerLite-ApiKey': process.env.MAILERLITE_API_KEY
+  req.on('end', async () => {
+    try {
+      req.body = JSON.parse(body);
+    } catch (err) {
+      console.error('Error parsing JSON', err);
+      return res.status(400).json({ message: 'Bad request' });
+    }
+
+    const { email, name } = req.body;
+
+    if (!email || !name) {
+      return res.status(400).json({ message: 'Name and email are required' });
+    }
+
+    try {
+      const response = await axios.post(
+        `https://api.mailerlite.com/api/v2/groups/${process.env.MAILERLITE_GROUP_ID}/subscribers`,
+        {
+          email: email,
+          name: name
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-MailerLite-ApiKey': process.env.MAILERLITE_API_KEY
+          }
         }
-      }
-    );
+      );
 
-    return res.status(200).json({ message: 'Subscription successful' });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'An error occurred' });
-  }
+      return res.status(200).json({ message: 'Subscription successful' });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'An error occurred' });
+    }
+  });
 };
 
