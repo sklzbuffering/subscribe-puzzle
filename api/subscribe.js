@@ -10,6 +10,11 @@ module.exports = async (req, res) => {
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
+  // If it's an OPTIONS request (the preflight request), respond right away
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (!req.body) {
     return res.status(400).json({ message: 'Request body is missing' });
   }
